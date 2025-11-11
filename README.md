@@ -47,7 +47,7 @@ Mô hình được xây dựng dựa trên kiến trúc **Convolutional Neural N
 - Evaluation Metrics: Accuracy, Precision, Recall, F1-score
 
 <p align="center">
-  <img src="docs/cnn_architecture.png" width="600" alt="CNN Architecture">
+  <img src="docs/Typical-CNN-Architecture-1024x374.png" width="600" alt="CNN Architecture">
 </p>
 
 ---
