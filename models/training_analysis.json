@@ -1,0 +1,34 @@
+{
+  "timestamp": "2025-11-14T15:03:58.253103",
+  "model_architecture": "DenseNet121",
+  "dataset": "Chest X-Ray Pneumonia",
+  "training_config": {
+    "Model Architecture": "DenseNet121 (pretrained on ImageNet)",
+    "Optimizer": "AdamW",
+    "Learning Rate": 0.0005,
+    "Batch Size": 16,
+    "Epochs": 15,
+    "Dropout Rate": 0.5,
+    "Image Size": [
+      224,
+      224
+    ],
+    "Loss Function": "CrossEntropyLoss",
+    "LR Scheduler": "ReduceLROnPlateau (factor=0.5, patience=3)",
+    "Mixed Precision": "FP16 (CUDA)",
+    "Data Augmentation": "RandomHorizontalFlip, RandomRotation"
+  },
+  "performance_metrics": {
+    "best_epoch": 10,
+    "best_val_acc": 0.9614929688526744,
+    "best_train_acc": 0.9468722329287984
+  },
+  "convergence_analysis": {
+    "overfitting_gap": 0.014620735923876027,
+    "status": "✓ Good - Low overfitting"
+  },
+  "recommendations": [
+    "✓ Model performance is excellent - ready for deployment",
+    "• Consider increasing batch size if GPU memory allows"
+  ]
+}

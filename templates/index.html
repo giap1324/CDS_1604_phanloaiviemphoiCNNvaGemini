@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="upload-section">
+    <h2>Chẩn đoán Viêm phổi từ ảnh X-quang</h2>
+    <p class="subtitle">Tải lên ảnh X-quang phổi để nhận kết quả chẩn đoán tự động</p>
+    
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-content">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p>Kéo thả ảnh vào đây hoặc <span class="browse-link">chọn file</span></p>
+            <p class="file-info">Hỗ trợ: JPG, PNG, JPEG (tối đa 16MB)</p>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+    </div>
+
+    <div id="previewSection" class="preview-section" style="display: none;">
+        <h3>Ảnh đã chọn</h3>
+        <div class="image-preview">
+            <img id="previewImage" src="" alt="Preview">
+        </div>
+        <button id="predictBtn" class="btn btn-primary">Chẩn đoán</button>
+        <button id="cancelBtn" class="btn btn-secondary">Chọn ảnh khác</button>
+    </div>
+
+    <div id="resultSection" class="result-section" style="display: none;">
+        <h3>Kết quả chẩn đoán</h3>
+        <div id="resultContent"></div>
+        <button id="newUploadBtn" class="btn btn-primary">Tải ảnh mới</button>
+    </div>
+
+    <div id="loadingSection" class="loading-section" style="display: none;">
+        <div class="spinner"></div>
+        <p>Đang xử lý ảnh và chẩn đoán...</p>
+    </div>
+</div>
+
+<div class="recent-section">
+    <h2>Chẩn đoán gần đây</h2>
+    {% if recent_diagnoses %}
+    <div class="diagnosis-list">
+        {% for diagnosis in recent_diagnoses %}
+        <div class="diagnosis-card">
+            <div class="diagnosis-header">
+                <span class="prediction-badge {% if diagnosis.prediction == 'NORMAL' %}normal{% else %}pneumonia{% endif %}">
+                    {{ diagnosis.prediction }}
+                </span>
+                <span class="confidence">{{ diagnosis.confidence|round(2) }}%</span>
+            </div>
+            <div class="diagnosis-info">
+                <p><strong>File:</strong> {{ diagnosis.filename }}</p>
+                <p><strong>Thời gian:</strong> {{ diagnosis.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</p>
+            </div>
+            <a href="{{ url_for('view_diagnosis', diagnosis_id=diagnosis.id) }}" class="btn btn-small">Xem chi tiết</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="no-data">Chưa có chẩn đoán nào</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const previewSection = document.getElementById('previewSection');
+const previewImage = document.getElementById('previewImage');
+const predictBtn = document.getElementById('predictBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const resultSection = document.getElementById('resultSection');
+const resultContent = document.getElementById('resultContent');
+const loadingSection = document.getElementById('loadingSection');
+const newUploadBtn = document.getElementById('newUploadBtn');
+
+// Click vào upload area
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.querySelector('.browse-link').addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.click();
+});
+
+// Drag and drop
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFile(files[0]);
+    }
+});
+
+// File input change
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+    }
+});
+
+function handleFile(file) {
+    if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn file ảnh!');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        previewImage.src = e.target.result;
+        uploadArea.style.display = 'none';
+        previewSection.style.display = 'block';
+        resultSection.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+}
+
+predictBtn.addEventListener('click', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    previewSection.style.display = 'none';
+    loadingSection.style.display = 'block';
+
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            displayResult(data);
+        } else {
+            alert('Lỗi: ' + (data.error || 'Không thể xử lý ảnh'));
+            previewSection.style.display = 'block';
+        }
+    } catch (error) {
+        alert('Lỗi kết nối: ' + error.message);
+        previewSection.style.display = 'block';
+    } finally {
+        loadingSection.style.display = 'none';
+    }
+});
+
+function displayResult(data) {
+    const isNormal = data.is_normal;
+    const confidence = data.confidence;
+    
+    resultContent.innerHTML = `
+        <div class="result-card ${isNormal ? 'normal' : 'pneumonia'}">
+            <div class="result-icon">${isNormal ? '✅' : '⚠️'}</div>
+            <h3>${data.prediction === 'NORMAL' ? 'Phổi Bình thường' : 'Có dấu hiệu Viêm phổi'}</h3>
+            <p class="confidence-text">Độ tin cậy: <strong>${confidence}%</strong></p>
+            <div class="confidence-bar">
+                <div class="confidence-fill ${confidence > 90 ? 'high' : confidence > 70 ? 'medium' : 'low'}" style="width: ${confidence}%"></div>
+            </div>
+            <p class="disclaimer">⚠️ <strong>LƯU Ý QUAN TRỌNG:</strong> Kết quả này từ AI chỉ mang tính chất tham khảo và HỖ TRỢ, KHÔNG THAY THẾ chẩn đoán của bác sĩ. Vui lòng tham khảo ý kiến bác sĩ chuyên khoa để có chẩn đoán chính xác và phương án điều trị phù hợp.</p>
+            <a href="/diagnosis/${data.diagnosis_id}" class="btn btn-primary">Xem chi tiết đầy đủ</a>
+        </div>
+    `;
+    
+    resultSection.style.display = 'block';
+}
+
+cancelBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    uploadArea.style.display = 'block';
+    previewSection.style.display = 'none';
+    resultSection.style.display = 'none';
+});
+
+newUploadBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    uploadArea.style.display = 'block';
+    previewSection.style.display = 'none';
+    resultSection.style.display = 'none';
+});
+</script>
+{% endblock %}
+

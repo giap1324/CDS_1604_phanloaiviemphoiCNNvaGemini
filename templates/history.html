@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Lịch sử chẩn đoán{% endblock %}
+
+{% block content %}
+<h2>Lịch sử chẩn đoán</h2>
+
+{% if diagnoses.items %}
+<div class="diagnosis-table">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>File</th>
+                <th>Kết quả</th>
+                <th>Độ tin cậy</th>
+                <th>Thời gian</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for diagnosis in diagnoses.items %}
+            <tr>
+                <td>{{ diagnosis.id }}</td>
+                <td>{{ diagnosis.filename }}</td>
+                <td>
+                    <span class="prediction-badge {% if diagnosis.prediction == 'NORMAL' %}normal{% else %}pneumonia{% endif %}">
+                        {{ diagnosis.prediction }}
+                    </span>
+                </td>
+                <td>{{ diagnosis.confidence|round(2) }}%</td>
+                <td>{{ diagnosis.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                <td>
+                    <a href="{{ url_for('view_diagnosis', diagnosis_id=diagnosis.id) }}" class="btn btn-small">Xem</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="pagination">
+    {% if diagnoses.has_prev %}
+    <a href="{{ url_for('history', page=diagnoses.prev_num) }}" class="btn">« Trước</a>
+    {% endif %}
+    
+    <span>Trang {{ diagnoses.page }} / {{ diagnoses.pages }}</span>
+    
+    {% if diagnoses.has_next %}
+    <a href="{{ url_for('history', page=diagnoses.next_num) }}" class="btn">Sau »</a>
+    {% endif %}
+</div>
+{% else %}
+<p class="no-data">Chưa có chẩn đoán nào</p>
+{% endif %}
+{% endblock %}
+

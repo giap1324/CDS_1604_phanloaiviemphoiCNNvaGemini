@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Chi tiết chẩn đoán #{{ diagnosis.id }}{% endblock %}
+
+{% block content %}
+<div class="diagnosis-detail">
+    <h2>Chi tiết chẩn đoán #{{ diagnosis.id }}</h2>
+    
+    <div class="detail-card">
+        <div class="detail-section">
+            <h3>Kết quả</h3>
+            <div class="result-display">
+                <span class="prediction-badge large {% if diagnosis.prediction == 'NORMAL' %}normal{% else %}pneumonia{% endif %}">
+                    {{ diagnosis.prediction }}
+                </span>
+                <p class="confidence-large">Độ tin cậy: <strong>{{ diagnosis.confidence|round(2) }}%</strong></p>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <h3>Thông tin file</h3>
+            <p><strong>Tên file:</strong> {{ diagnosis.filename }}</p>
+            <p><strong>Thời gian:</strong> {{ diagnosis.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</p>
+        </div>
+        
+        <div class="detail-section">
+            <h3>Ảnh X-quang</h3>
+            <div class="image-container">
+                <img src="{{ url_for('uploaded_file', filename=diagnosis.filename) }}" 
+                     alt="X-ray image" 
+                     onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27224%27 height=%27224%27%3E%3Ctext x=%2750%25%27 y=%2750%25%27 text-anchor=%27middle%27%3EẢnh không tìm thấy%3C/text%3E%3C/svg%3E'">
+            </div>
+        </div>
+        
+        {% if diagnosis.medical_report %}
+        <div class="detail-section medical-report-section">
+            <h3>📋 Báo cáo y khoa tự động (Gemini AI)</h3>
+            <div class="medical-report-box">
+                <div class="report-timestamp">
+                    <small>Được tạo lúc: {{ diagnosis.report_generated_at.strftime('%d/%m/%Y %H:%M:%S') if diagnosis.report_generated_at else 'N/A' }}</small>
+                </div>
+                <div class="report-content">
+                    {{ diagnosis.medical_report|format_medical_report|safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="disclaimer-box">
+            <p><strong>⚠️ Lưu ý:</strong> Kết quả này chỉ mang tính chất tham khảo. Vui lòng tham khảo ý kiến bác sĩ chuyên khoa để có chẩn đoán chính xác và điều trị phù hợp.</p>
+        </div>
+    </div>
+    
+    <div class="action-buttons">
+        <a href="{{ url_for('history') }}" class="btn btn-secondary">Quay lại lịch sử</a>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Chẩn đoán mới</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}
+
